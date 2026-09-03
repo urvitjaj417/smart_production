@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+*.joblib
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# OS
+.DS_Store
