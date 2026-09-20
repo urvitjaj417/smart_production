@@ -51,9 +51,14 @@ DEFAULT_CSV = MODELS_DIR.parent / "data" / "sensor_data.csv"
 
 
 # ── Load and prepare data ──────────────────────────────────────────────────
-def load_and_prepare(csv_path: str = "data/sensor_data.csv"):
+def load_and_prepare(csv_path: str | Path | None = None):
     import pandas as pd
-    df = pd.read_csv(csv_path)
+    path = DEFAULT_CSV if csv_path is None else Path(csv_path)
+    if not path.is_absolute():
+        path = MODELS_DIR.parent / path
+    if not path.exists():
+        raise FileNotFoundError(f"CSV not found at '{path}'. Run generate_data.py first.")
+    df = pd.read_csv(path)
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 

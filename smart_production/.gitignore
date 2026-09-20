@@ -1,9 +1,17 @@
 # Python
 __pycache__/
 *.pyc
+.venv/
 venv/
 .env
+
+# Generated data and trained artifacts
+data/*.csv
+models/
+*.pkl
 *.joblib
+*.db
+c_module/sensor_sim
 
 # Node
 node_modules/

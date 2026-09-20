@@ -32,7 +32,7 @@ def load_data(csv_path: str | Path | None = None) -> pd.DataFrame:
             "Fix: run  python generate_data.py  first."
         )
 
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(path)
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     df = df.sort_values("timestamp").reset_index(drop=True)
@@ -57,8 +57,10 @@ def load_data(csv_path: str | Path | None = None) -> pd.DataFrame:
     if "fault_flag" not in df.columns:
         raise ValueError("Could not find a failure/fault column in the CSV.")
 
-    # Ensure machine_name exists (Python generator uses machine_id only)
+    # Ensure machine_name exists (Python generator uses machine_id only).
     if "machine_name" not in df.columns:
+        if "machine_id" not in df.columns:
+            raise ValueError("CSV must contain either 'machine_name' or 'machine_id'.")
         df["machine_name"] = df["machine_id"]
 
     print(f"[data_loader] {len(df)} records | "
