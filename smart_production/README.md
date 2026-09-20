@@ -1,129 +1,191 @@
-# Smart_Production
+# AI-Based Smart Production Optimization System
 
-A manufacturing analytics platform: real-time sensor monitoring, ML-based
-predictive maintenance, and an executive dashboard — built on a proper
-React + FastAPI + PostgreSQL stack.
+End-to-end machine fault prediction and workflow optimizer. Built with **C** (sensor simulation) + **Python** (ML + dashboard) as an engineering student capstone project.
 
-This replaces the earlier single-file HTML prototype (`smart_production_v6_2.html`)
-with a real backend, real database, and a real trained ML model, per the
-project spec.
+---
 
-## Stack
+## What It Does
 
-| Layer      | Tech                                      |
-|------------|--------------------------------------------|
-| Frontend   | React + TypeScript + Tailwind CSS + Chart.js |
-| Backend    | FastAPI (Python)                          |
-| Database   | PostgreSQL                                |
-| ML         | scikit-learn (RandomForest, two-stage: fault detection + fault-type classification) |
-| Deployment | Docker, GitHub Actions CI, Vercel (frontend) + Render/Railway (backend+DB) |
+| Component | Description |
+|-----------|-------------|
+| Data generation | Simulated sensor readings with realistic fault injection |
+| ML Model | Predicts machine failure (Logistic Regression / Random Forest / XGBoost) |
+| Optimization Logic | If `failure_risk > 0.7` → reduce load / maintenance required |
+| OEE Report | Overall Equipment Effectiveness per machine |
+| Dashboard | Full HTML operations cockpit plus the Streamlit ML dashboard |
+| REST API | Optional Flask API for integration with factory systems |
 
-## Project layout
+---
+
+## Project Structure
 
 ```
 smart_production/
-├── backend/
-│   ├── app/
-│   │   ├── main.py            # FastAPI app + router registration
-│   │   ├── database.py        # SQLAlchemy engine/session
-│   │   ├── models.py          # ORM tables (machines, sensor_readings, alerts, ...)
-│   │   ├── schemas.py         # Pydantic request/response models
-│   │   ├── routers/           # machines, sensors, alerts, maintenance, dashboard, erp, predict
-│   │   └── ml/
-│   │       ├── train_model.py # Trains the RandomForest model
-│   │       └── predict.py     # Loads model, serves inference
-│   ├── seed.py                 # Populates DB with demo machines + 30 days of history
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── api/client.ts      # Typed API client (axios)
-│   │   ├── components/        # KpiCard, etc.
-│   │   ├── pages/Dashboard.tsx
-│   │   └── App.tsx
-│   ├── package.json
-│   └── Dockerfile
-├── docker-compose.yml
-└── .github/workflows/ci.yml
+├── generate_data.py          ← Python data generator (no gcc needed)
+├── c_module/
+│   ├── sensor_sim.c          ← C data generator (advanced, needs gcc)
+│   └── Makefile
+├── ml/
+│   ├── data_loader.py        ← CSV loading + feature engineering
+│   ├── model.py              ← Random Forest (main model)
+│   ├── model_xgb.py          ← All 3 models: LR / RF / XGBoost + optimization logic
+│   └── optimizer.py          ← OEE, bottleneck detection, workflow suggestions
+├── dashboard/
+│   ├── index.html            ← Full operations cockpit demo (primary front end)
+│   └── app.py                ← Streamlit ML dashboard
+├── api/
+│   └── flask_api.py          ← Optional Flask REST API
+├── data/                     ← CSV goes here (gitignored)
+├── models/                   ← .pkl models go here (gitignored)
+├── requirements.txt
+└── README.md
 ```
 
-## Quick start (Docker — recommended)
+---
+
+## Quick Start
+
+### Step 1 — Install dependencies
 
 ```bash
-docker compose up --build
-```
-
-This starts Postgres, trains the ML model, boots the FastAPI backend on
-`:8000`, and serves the built frontend on `:5173`. Then seed the database:
-
-```bash
-docker compose exec backend python seed.py
-```
-
-Visit `http://localhost:5173`. API docs (Swagger UI) at `http://localhost:8000/docs`.
-
-## Local development (without Docker)
-
-**Backend:**
-```bash
-cd backend
-python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env   # edit DATABASE_URL if not using the default local Postgres
-python -m app.ml.train_model     # trains model.joblib
-python seed.py                   # populate demo data (requires Postgres running)
-uvicorn app.main:app --reload --port 8000
 ```
 
-You'll need a local Postgres instance matching `.env`'s `DATABASE_URL`, e.g.:
+### Step 2 — Generate data
+
+**Option A: Pure Python (recommended, no gcc needed)**
 ```bash
-docker run -d -p 5432:5432 -e POSTGRES_USER=smart_production \
-  -e POSTGRES_PASSWORD=smart_production -e POSTGRES_DB=smart_production postgres:16-alpine
+python generate_data.py
+# or: python generate_data.py --records 3000 --out data/sensor_data.csv
 ```
 
-**Frontend:**
+**Option B: C module (faster, more realistic)**
 ```bash
-cd frontend
-npm install
-npm run dev   # http://localhost:5173, proxies /api to :8000
+cd c_module && make run && cd ..
 ```
 
-## Deployment
+### Step 3 — Train the model
 
-- **Frontend → Vercel**: connect the repo, set root directory to `frontend/`,
-  build command `npm run build`, output directory `dist`. Set `VITE_API_URL`
-  to the deployed backend origin, for example
-  `https://your-backend.onrender.com` (without `/api`). The frontend uses the
-  Vite `/api` proxy only during local development.
-- **Backend + DB → Render or Railway**: both support "deploy from Dockerfile"
-  plus a managed Postgres add-on — point `DATABASE_URL` at the managed
-  instance's connection string and set `CORS_ORIGINS` to the Vercel origin,
-  for example `https://smart-production-phi.vercel.app`.
-- **CI**: `.github/workflows/ci.yml` runs on every push/PR — trains the model
-  as a smoke test and type-checks + builds the frontend.
+```bash
+# Train all three models and compare
+python ml/model_xgb.py --model all
 
-## Retraining the ML model on real data
+# Or just Random Forest (best results)
+python ml/model_xgb.py --model rf
 
-`train_model.py` currently trains on synthetic data (see
-`generate_synthetic_training_data()`) so the project is runnable without
-historical data. Once you have real logged faults in `sensor_readings`,
-switch to real data:
+# Or XGBoost (needs: pip install xgboost)
+python ml/model_xgb.py --model xgb
+```
+
+You will see printed output like:
+
+```
+[CNC_Mill_A] HIGH RISK (73%) -- Reduce load / Maintenance required
+[Lathe_B]    MEDIUM RISK (51%) -- Monitor closely / Schedule inspection
+[Drill_E]    LOW RISK (12%) -- Normal operation. No action needed.
+```
+
+### Step 4 — Launch the dashboard
+
+```bash
+streamlit run dashboard/app.py
+```
+
+Open http://localhost:8501
+
+### Full operations cockpit demo
+
+The primary front end is the standalone `dashboard/index.html`. It includes the
+overview, predictive maintenance, shifts, OEE, alerts, raw data, shot peening,
+CNC machining, work orders, and quality/NADCAP modules. Serve it locally with:
+
+```bash
+python -m http.server 8501 --directory dashboard
+```
+
+Then open http://localhost:8501.
+
+### Step 5 (optional) — REST API
+
+```bash
+python api/flask_api.py
+
+# Test:
+curl -X POST http://localhost:5000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"temperature_c":130,"vibration_mms":1.5,"pressure_bar":5.0,
+       "current_a":13.0,"cycle_time_s":3.5,"output_rate_uph":100}'
+```
+
+---
+
+## Dataset Columns
+
+| Column | Description |
+|--------|-------------|
+| `machine_id` | Machine identifier |
+| `temperature` | Sensor temperature (°C) |
+| `pressure` | Operating pressure (bar) |
+| `operating_time` | Hours of continuous operation |
+| `output_rate` | Units produced per hour |
+| `failure` | 0 = normal, 1 = fault |
+| `fault_type` | Overheating / Bearing Wear / Pressure Drop / Electrical Surge |
+| `facility` | Plant 1 / Plant 2 |
+| `function` | Machining / Forming / Assembly / Surface Treatment / Inspection / Joining / Finishing |
+| `process` | Primary production process for the asset |
+| `special_process` | Shot Peening / Heat Treatment / Anodizing / NDT / Welding / Painting / None |
+| `batch_id` | Production batch identifier |
+
+---
+
+## ML Model Results
+
+| Model | F1 Score | ROC-AUC |
+|-------|----------|---------|
+| Logistic Regression | ~0.65 | ~0.96 |
+| Random Forest | ~0.83 | ~0.99 |
+| XGBoost | ~0.85 | ~0.99 |
+
+---
+
+## Optimization Logic (the unique part)
 
 ```python
-from app.ml.train_model import train
-train(use_db=True)
+if failure_risk > 0.7:
+    suggest = "Reduce load / Maintenance required"
+elif failure_risk > 0.4:
+    suggest = "Monitor closely / Schedule inspection"
+else:
+    suggest = "Normal operation. No action needed."
 ```
 
-## What's real vs. what's still a stub
+If a bottleneck is detected (machine risk > 1.5x fleet average):
+- Increase capacity on that machine
+- Suggest alternate production flow
 
-Being upfront, matching the honesty standard used throughout this project:
+---
 
-- **Real**: sensor ingestion, KPI aggregation (SQL), the RandomForest
-  fault-detection/fault-type model, alerts, maintenance logging, machine CRUD.
-- **Partial**: the React frontend currently ships one page (Executive
-  Dashboard) as a working reference implementation — Failures, Sensors, OEE,
-  Correlation, etc. from the original HTML prototype aren't ported yet.
-  `App.tsx`'s `navItems` array is where to add them.
-- **Not real / needs real integration**: ERP/Supply Chain data model exists
-  (inventory, vendors, purchase orders tables + CRUD endpoints) but isn't
-  connected to an actual ERP system — same honest caveat as the HTML prototype.
+## Push to GitHub
+
+```bash
+git init
+git add .
+git commit -m "feat: AI production optimization system (C + Python)"
+git remote add origin https://github.com/YOUR_USERNAME/smart-production
+git push -u origin main
+```
+
+---
+
+## Tech Stack
+
+- **C (gcc)** — low-level sensor data simulation
+- **Python** — data engineering, ML, dashboard, API
+- **scikit-learn** — Logistic Regression, Random Forest
+- **XGBoost** — gradient boosting classifier
+- **Streamlit + Plotly** — interactive dashboard
+- **Flask** — REST API wrapper
+
+---
+
+*Engineering student project — demonstrating real industrial AI concepts: predictive maintenance, OEE, bottleneck detection, and workflow optimization.*
