@@ -107,13 +107,13 @@ Then open http://localhost:8501.
 
 ### Demo walkthrough video
 
-The repository includes a narrated **UHD 3840×2160** walkthrough with a visible
-AI-agent cursor, click indicators, numbered transitions, and synchronized
-step-by-step explanations. It covers the overview, failure predictions, sensor
-analytics, OEE and alerts, Shot Peening, CNC Machining, Quality & Compliance,
-Live Predict, Raw Data and AI Assistant, advanced operations, Predictive
-Quality, and the Executive Dashboard. Open `demo/smart_production_demo.mp4` to
-view it.
+The repository includes a polished narrated walkthrough with a visible AI-agent
+cursor, animated click indicators, numbered transitions, synchronized narration,
+real browser interaction, and smooth scrolling through long sections. The
+Quality & Compliance segment explicitly shows the populated NCR table, root-cause
+charts, and calibration register while they are explained. The recommended
+LinkedIn/company cut is `demo/smart_production_demo.mp4` in 1920×1080. A
+3840×2160 master is available at `demo/smart_production_company_demo_uhd.mp4`.
 
 ### Step 5 (optional) — REST API
 
