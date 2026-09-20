@@ -107,9 +107,10 @@ Then open http://localhost:8501.
 
 ### Demo walkthrough video
 
-The repository includes a narrated walkthrough covering the overview, predictive
-maintenance, Shot Peening, CNC Machining, Work Order Tracker, and Quality &
-Compliance modules. Open `demo/smart_production_demo.mp4` to view it.
+The repository includes a narrated **UHD 3840×2160** walkthrough covering the
+overview, predictive maintenance, Shot Peening, CNC Machining, Work Order
+Tracker, and Quality & Compliance modules. Open `demo/smart_production_demo.mp4`
+to view it.
 
 ### Step 5 (optional) — REST API
 
